@@ -1,0 +1,2284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TurboPost SaaS Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #FF1F8E;
+            --secondary-color: #4E1183;
+            --background-color: #f4f4f4;
+            --text-color: #333;
+            --card-bg: #fff;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --sidebar-width: 250px;
+            --header-height: 60px;
+            --transition: all 0.3s ease;
+        }
+
+        .dark-theme {
+            --background-color: #1a1a1a;
+            --text-color: #f4f4f4;
+            --card-bg: #2a2a2a;
+            --card-shadow: 0 4px 6px rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: var(--transition);
+        }
+
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--secondary-color);
+            color: #fff;
+            padding: 20px;
+            transition: var(--transition);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            width: 120px;
+            height: auto;
+        }
+
+        .toggle-sidebar {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .sidebar-nav ul {
+            list-style-type: none;
+        }
+
+        .sidebar-nav ul li {
+            margin-bottom: 15px;
+        }
+
+        .sidebar-nav ul li a {
+            color: #fff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 5px;
+            transition: var(--transition);
+        }
+
+        .sidebar-nav ul li a:hover,
+        .sidebar-nav ul li a.active {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-nav ul li a i {
+            margin-right: 10px;
+        }
+
+        .sidebar-footer {
+            margin-top: 30px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-weight: bold;
+        }
+
+        .user-role {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            margin-left: var(--sidebar-width);
+            transition: var(--transition);
+        }
+
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin-left: 15px;
+            position: relative;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: var(--primary-color);
+            color: #fff;
+            font-size: 0.7rem;
+            padding: 2px 5px;
+            border-radius: 50%;
+        }
+
+        .user-menu {
+            position: relative;
+            margin-left: 15px;
+        }
+
+        .user-menu-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background-color: var(--card-bg);
+            box-shadow: var(--card-shadow);
+            border-radius: 5px;
+            padding: 10px 0;
+            z-index: 1000;
+        }
+
+        .user-menu-dropdown a {
+            display: block;
+            padding: 10px 20px;
+            color: var(--text-color);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .user-menu-dropdown a:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .user-menu:hover .user-menu-dropdown {
+            display: block;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            box-shadow: var(--card-shadow);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-right: 20px;
+        }
+
+        .stat-info h3 {
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .stat-change {
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+
+        .stat-change.positive {
+            color: #4CAF50;
+        }
+
+        .stat-change.negative {
+            color: #F44336;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        .chart-card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .chart-card h3 {
+            margin-bottom: 20px;
+        }
+
+        .search-filter {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .search-filter input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        .search-filter select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .sellers-grid,
+        .subscriptions-grid,
+        .gerentes-grid,
+        .paises-grid,
+        .jefes-equipo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .seller-card,
+        .subscription-card,
+        .gerente-card,
+        .pais-card,
+        .jefe-equipo-card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .seller-card:hover,
+        .subscription-card:hover,
+        .gerente-card:hover,
+        .pais-card:hover,
+        .jefe-equipo-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .seller-avatar,
+        .gerente-avatar,
+        .jefe-equipo-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            margin-bottom: 15px;
+            object-fit: cover;
+        }
+
+        .seller-name,
+        .subscription-name,
+        .gerente-name,
+        .pais-name,
+        .jefe-equipo-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .seller-stats,
+        .subscription-stats,
+        .gerente-stats,
+        .pais-stats,
+        .jefe-equipo-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        .seller-stat,
+        .subscription-stat,
+        .gerente-stat,
+        .pais-stat,
+        .jefe-equipo-stat {
+            text-align: center;
+        }
+
+        .seller-stat-value,
+        .subscription-stat-value,
+        .gerente-stat-value,
+        .pais-stat-value,
+        .jefe-equipo-stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .seller-stat-label,
+        .subscription-stat-label,
+        .gerente-stat-label,
+        .pais-stat-label,
+        .jefe-equipo-stat-label {
+            font-size: 0.8rem;
+            color: var(--text-color);
+        }
+
+        .seller-whatsapp,
+        .gerente-whatsapp,
+        .jefe-equipo-whatsapp {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .seller-whatsapp i,
+        .gerente-whatsapp i,
+        .jefe-equipo-whatsapp i {
+            color: #25D366;
+            margin-right: 5px;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            margin: 0 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: #fff;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        .btn:hover {
+            opacity: 0.8;
+        }
+
+        .users-table-container {
+            overflow-x: auto;
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .users-table th,
+        .users-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--text-color);
+        }
+
+        .users-table th {
+            background-color: var(--secondary-color);
+            color: #fff;
+        }
+
+        .users-table tr:hover {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            background-color: var(--card-bg);
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            border-radius: 10px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .report-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .report-preview {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            margin-top: 20px;
+        }
+
+        .config-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .config-section {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .config-section h3 {
+            margin-bottom: 15px;
+        }
+
+        .btn-whatsapp {
+            background-color: #25D366;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .btn-whatsapp i {
+            margin-right: 5px;
+        }
+
+        .cliente-card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .cliente-card h3 {
+            margin-bottom: 10px;
+        }
+
+        .cliente-card p {
+            margin-bottom: 5px;
+        }
+
+        .cliente-card .btn-send-email {
+            margin-top: 10px;
+        }
+
+        .cliente-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .cliente-card-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .cliente-card-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .slide-in {
+            animation: slideIn 0.5s ease-in-out;
+        }
+
+        #generate-report {
+            height: 38px;
+            line-height: 38px;
+            padding: 0 15px;
+        }
+
+        #download-report {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                z-index: 1000;
+                height: auto;
+                padding: 10px;
+            }
+
+            .sidebar-nav ul {
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+            }
+
+            .sidebar-nav ul li {
+                margin-bottom: 10px;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding-bottom: 60px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .top-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header-actions {
+                margin-top: 10px;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .section-header button {
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="https://i.imgur.com/S7dXitD.png" alt="TurboPost Logo" class="logo">
+                <button id="toggle-sidebar" class="toggle-sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="#" data-section="ventas" class="active"><i class="fas fa-chart-line"></i> Ventas</a></li>
+                    <li><a href="#" data-section="vendedores"><i class="fas fa-users"></i> Vendedores</a></li>
+                    <li><a href="#" data-section="gerentes"><i class="fas fa-user-tie"></i> Gerentes</a></li>
+                    <li><a href="#" data-section="paises"><i class="fas fa-globe"></i> Países</a></li>
+                    <li><a href="#" data-section="jefes-equipo"><i class="fas fa-user-friends"></i> Jefes de Equipo</a></li>
+                    <li><a href="#" data-section="suscripciones"><i class="fas fa-receipt"></i> Suscripciones</a></li>
+                    <li><a href="#" data-section="clientes-potenciales"><i class="fas fa-user-tag"></i> Clientes Potenciales</a></li>
+                    <li><a href="#" data-section="reportes"><i class="fas fa-file-alt"></i> Reportes</a></li>
+                    <li><a href="#" data-section="configuracion"><i class="fas fa-cog"></i> Configuración</a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <img src="https://randomuser.me/api/portraits/men/1.jpg" alt="Usuario" class="user-avatar">
+                    <div class="user-details">
+                        <span class="user-name">John Doe</span>
+                        <span class="user-role">Administrador</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        <main class="main-content">
+            <header class="top-header">
+                <h1 id="section-title">Dashboard de Ventas</h1>
+                <div class="header-actions">
+                    <button id="notifications-btn" class="icon-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">3</span>
+                    </button>
+                    <button id="theme-toggle" class="icon-btn">
+                        <i class="fas fa-sun"></i>
+                    </button>
+                    <div class="user-menu">
+                        <img src="https://randomuser.me/api/portraits/men/1.jpg" alt="Usuario" class="user-avatar">
+                        <div class="user-menu-dropdown">
+                            <a href="#" id="profile-link"><i class="fas fa-user"></i> Perfil</a>
+                            <a href="#"><i class="fas fa-cog"></i> Configuración</a>
+                            <a href="#"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <div id="ventas" class="section active">
+                <div class="stats-grid">
+                    <div class="stat-card slide-in">
+                        <div class="stat-icon">
+                            <i class="fas fa-euro-sign"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Ventas Totales</h3>
+                            <p class="stat-value" id="total-sales">€0</p>
+                            <p class="stat-change positive">
+                                <i class="fas fa-arrow-up"></i> 15% vs mes anterior
+                            </p>
+                        </div>
+                    </div>
+                    <div class="stat-card slide-in">
+                        <div class="stat-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Número de Ventas</h3>
+                            <p class="stat-value" id="total-sales-count">0</p>
+                            <p class="stat-change positive">
+                                <i class="fas fa-arrow-up"></i> 8% vs mes anterior
+                            </p>
+                        </div>
+                    </div>
+                    <div class="stat-card slide-in">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-friends"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Vendedores Activos</h3>
+                            <p class="stat-value" id="active-sellers">0</p>
+                            <p class="stat-change negative">
+                                <i class="fas fa-arrow-down"></i> 2% vs mes anterior
+                            </p>
+                        </div>
+                    </div>
+                    <div class="stat-card slide-in">
+                        <div class="stat-icon">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Tasa de Conversión</h3>
+                            <p class="stat-value" id="conversion-rate">0%</p>
+                            <p class="stat-change positive">
+                                <i class="fas fa-arrow-up"></i> 5% vs mes anterior
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-card fade-in">
+                        <h3>Ventas Mensuales</h3>
+                        <canvas id="sales-chart"></canvas>
+                    </div>
+                    <div class="chart-card fade-in">
+                        <h3>Distribución de Ventas por Vendedor</h3>
+                        <canvas id="sellers-chart"></canvas>
+                    </div>
+                    <div class="chart-card fade-in">
+                        <h3>Suscripciones Más Vendidas</h3>
+                        <canvas id="subscriptions-chart"></canvas>
+                    </div>
+                    <div class="chart-card fade-in">
+                        <h3>Rendimiento por Región</h3>
+                        <canvas id="regions-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div id="vendedores" class="section">
+                <div class="section-header">
+                    <h2>Gestión de Vendedores</h2>
+                    <button id="new-seller" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nuevo Vendedor
+                    </button>
+                </div>
+                <div class="search-filter">
+                    <input type="text" id="seller-search" placeholder="Buscar vendedor...">
+                    <select id="seller-filter">
+                        <option value="">Todos los vendedores</option>
+                        <option value="top">Top vendedores</option>
+                        <option value="new">Nuevos vendedores</option>
+                    </select>
+                </div>
+                <div class="sellers-grid" id="sellers-grid">
+                    <!-- Vendedores se cargarán dinámicamente aquí -->
+                </div>
+                <div class="pagination">
+                    <button id="prev-page" class="btn btn-secondary">Anterior</button>
+                    <span id="page-info">Página 1 de 1</span>
+                    <button id="next-page" class="btn btn-secondary">Siguiente</button>
+                </div>
+            </div>
+            <div id="gerentes" class="section">
+                <div class="section-header">
+                    <h2>Gestión de Gerentes</h2>
+                    <button id="new-gerente" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nuevo Gerente
+                    </button>
+                </div>
+                <div class="search-filter">
+                    <input type="text" id="gerente-search" placeholder="Buscar gerente...">
+                    <select id="gerente-filter">
+                        <option value="">Todos los gerentes</option>
+                        <option value="top">Top gerentes</option>
+                        <option value="new">Nuevos gerentes</option>
+                    </select>
+                </div>
+                <div class="gerentes-grid" id="gerentes-grid">
+                    <!-- Gerentes se cargarán dinámicamente aquí -->
+                </div>
+                <div class="pagination">
+                    <button id="prev-gerente-page" class="btn btn-secondary">Anterior</button>
+                    <span id="gerente-page-info">Página 1 de 1</span>
+                    <button id="next-gerente-page" class="btn btn-secondary">Siguiente</button>
+                </div>
+            </div>
+            <div id="paises" class="section">
+                <div class="section-header">
+                    <h2>Gestión de Países</h2>
+                </div>
+                <div class="search-filter">
+                    <input type="text" id="pais-search" placeholder="Buscar país...">
+                </div>
+                <div class="paises-grid" id="paises-grid">
+                    <!-- Países se cargarán dinámicamente aquí -->
+                </div>
+            </div>
+            <div id="jefes-equipo" class="section">
+                <div class="section-header">
+                    <h2>Gestión de Jefes de Equipo</h2>
+                    <button id="new-jefe-equipo" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nuevo Jefe de Equipo
+                    </button>
+                </div>
+                <div class="search-filter">
+                    <input type="text" id="jefe-equipo-search" placeholder="Buscar jefe de equipo...">
+                    <select id="jefe-equipo-filter">
+                        <option value="">Todos los jefes de equipo</option>
+                        <option value="top">Top jefes de equipo</option>
+                        <option value="new">Nuevos jefes de equipo</option>
+                    </select>
+                </div>
+                <div class="jefes-equipo-grid" id="jefes-equipo-grid">
+                    <!-- Jefes de equipo se cargarán dinámicamente aquí -->
+                </div>
+                <div class="pagination">
+                    <button id="prev-jefe-equipo-page" class="btn btn-secondary">Anterior</button>
+                    <span id="jefe-equipo-page-info">Página 1 de 1</span>
+                    <button id="next-jefe-equipo-page" class="btn btn-secondary">Siguiente</button>
+                </div>
+            </div>
+            <div id="suscripciones" class="section">
+                <div class="section-header">
+                    <h2>Gestión de Suscripciones</h2>
+                    <button id="new-subscription" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nueva Suscripción
+                    </button>
+                </div>
+                <div class="search-filter">
+                    <input type="text" id="subscription-search" placeholder="Buscar suscripción...">
+                    <select id="subscription-category">
+                        <option value="">Todas las categorías</option>
+                        <!-- Categorías se cargarán dinámicamente -->
+                    </select>
+                </div>
+                <div class="subscriptions-grid" id="subscriptions-grid">
+                    <!-- Suscripciones se cargarán dinámicamente aquí -->
+                </div>
+                <div class="pagination">
+                    <button id="prev-subscription-page" class="btn btn-secondary">Anterior</button>
+                    <span id="subscription-page-info">Página 1 de 1</span>
+                    <button id="next-subscription-page" class="btn btn-secondary">Siguiente</button>
+                </div>
+            </div>
+            <div id="clientes-potenciales" class="section">
+                <div class="section-header">
+                    <h2>Gestión de Clientes Potenciales</h2>
+                    <button id="new-potential-client" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Nuevo Cliente Potencial
+                    </button>
+                </div>
+                <div class="search-filter">
+                    <input type="text" id="potential-client-search" placeholder="Buscar cliente potencial...">
+                    <select id="potential-client-type">
+                        <option value="">Todos los tipos</option>
+                        <option value="agencia">Agencia</option>
+                        <option value="negocio">Negocio</option>
+                    </select>
+                </div>
+                <div id="potential-clients-grid"></div>
+            </div>
+            <div id="reportes" class="section">
+                <h2>Generación de Reportes</h2>
+                <div class="report-options">
+                    <div class="form-group">
+                        <label for="report-type">Tipo de Reporte:</label>
+                        <select id="report-type">
+                            <option value="ventas_generales">Ventas Generales</option>
+                            <option value="ventas_detalladas">Ventas Detalladas</option>
+                            <option value="rendimiento_vendedores">Rendimiento de Vendedores</option>
+                            <option value="resumen_suscripciones">Resumen de Suscripciones</option>
+                            <option value="reporte_financiero">Reporte Financiero</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="report-period">Período:</label>
+                        <select id="report-period">
+                            <option value="7d">Últimos 7 días</option>
+                            <option value="30d">Últimos 30 días</option>
+                            <option value="90d">Últimos 90 días</option>
+                            <option value="1y">Último año</option>
+                            <option value="custom">Personalizado</option>
+                        </select>
+                    </div>
+                    <div id="custom-date-range" style="display: none;">
+                        <div class="form-group">
+                            <label for="start-date">Fecha de inicio:</label>
+                            <input type="date" id="start-date">
+                        </div>
+                        <div class="form-group">
+                            <label for="end-date">Fecha de fin:</label>
+                            <input type="date" id="end-date">
+                        </div>
+                    </div>
+                    <button id="generate-report" class="btn btn-primary">Generar Reporte</button>
+                </div>
+                <button id="download-report" class="btn btn-primary" style="display: none;">DESCARGAR REPORTE</button>
+                <div id="report-preview" class="report-preview">
+                    <!-- La vista previa del reporte se cargará aquí -->
+                </div>
+            </div>
+            <div id="configuracion" class="section">
+                <h2>Configuración del Sistema</h2>
+                <div class="config-options">
+                    <div class="config-section">
+                        <h3>Configuración General</h3>
+                        <div class="form-group">
+                            <label for="company-name">Nombre de la Empresa:</label>
+                            <input type="text" id="company-name" value="TurboPost">
+                        </div>
+                        <div class="form-group">
+                            <label for="timezone">Zona Horaria:</label>
+                            <select id="timezone">
+                                <option value="UTC-5">UTC-5 (Eastern Time)</option>
+                                <option value="UTC+1">UTC+1 (Central European Time)</option>
+                                <option value="UTC+2">UTC+2 (Eastern European Time)</option>
+                                <option value="UTC+8">UTC+8 (China Standard Time)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="currency">Moneda Principal:</label>
+                            <select id="currency">
+                                <option value="EUR">Euro (€)</option>
+                                <option value="USD">Dólar Estadounidense ($)</option>
+                                <option value="GBP">Libra Esterlina (£)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="config-section">
+                        <h3>Configuración de Notificaciones</h3>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="email-notifications" checked>
+                                Recibir notificaciones por email
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="push-notifications" checked>
+                                Recibir notificaciones push
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="notification-frequency">Frecuencia de Notificaciones:</label>
+                            <select id="notification-frequency">
+                                <option value="realtime">Tiempo real</option>
+                                <option value="daily">Diario</option>
+                                <option value="weekly">Semanal</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="config-section">
+                        <h3>Seguridad</h3>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="two-factor-auth">
+                                Habilitar autenticación de dos factores
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="session-timeout">Tiempo de expiración de sesión:</label>
+                            <select id="session-timeout">
+                                <option value="15">15 minutos</option>
+                                <option value="30">30 minutos</option>
+                                <option value="60">1 hora</option>
+                                <option value="120">2 horas</option>
+                            </select>
+                        </div>
+                        <button id="change-password" class="btn btn-secondary">Cambiar Contraseña</button>
+                    </div>
+                </div>
+                <button id="save-config" class="btn btn-primary">Guardar Configuración</button>
+            </div>
+        </main>
+    </div>
+    <div id="user-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="user-modal-title">Nuevo Usuario</h2>
+            <form id="user-form">
+                <div class="form-group">
+                    <label for="user-name">Nombre:</label>
+                    <input type="text" id="user-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="user-email">Email:</label>
+                    <input type="email" id="user-email" required>
+                </div>
+                <div class="form-group">
+                    <label for="user-role">Rol:</label>
+                    <select id="user-role" required>
+                        <option value="vendedor">Vendedor</option>
+                        <option value="gerente">Gerente</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="user-status">Estado:</label>
+                    <select id="user-status" required>
+                        <option value="activo">Activo</option>
+                        <option value="inactivo">Inactivo</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="user-photo">Foto:</label>
+                    <input type="file" id="user-photo" accept="image/*">
+                </div>
+                <div class="form-group">
+                    <label for="user-whatsapp">Teléfono WhatsApp:</label>
+                    <input type="tel" id="user-whatsapp">
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </form>
+        </div>
+    </div>
+    <div id="subscription-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="subscription-modal-title">Nueva Suscripción</h2>
+            <form id="subscription-form">
+                <div class="form-group">
+                    <label for="subscription-name">Nombre del Plan:</label>
+                    <input type="text" id="subscription-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="subscription-category">Categoría:</label>
+                    <select id="subscription-category" required>
+                        <!-- Categorías se cargarán dinámicamente -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="subscription-price">Precio:</label>
+                    <input type="number" id="subscription-price" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="subscription-duration">Duración (días):</label>
+                    <input type="number" id="subscription-duration" required>
+                </div>
+                <div class="form-group">
+                    <label for="subscription-description">Descripción:</label>
+                    <textarea id="subscription-description" rows="4"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </form>
+        </div>
+    </div>
+    <div id="notification-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Notificaciones</h2>
+            <ul id="notification-list">
+                <!-- Las notificaciones se cargarán dinámicamente aquí -->
+            </ul>
+        </div>
+    </div>
+    <div id="admin-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Administrador General</h2>
+            <div id="admin-info">
+                <!-- Información del administrador se cargará aquí -->
+            </div>
+            <div id="company-structure">
+                <h3>Estructura de la Empresa</h3>
+                <!-- Diagrama de la estructura de la empresa se cargará aquí -->
+            </div>
+        </div>
+    </div>
+    <div id="potential-client-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="potential-client-modal-title">Nuevo Cliente Potencial</h2>
+            <form id="potential-client-form">
+                <div class="form-group">
+                    <label for="potential-client-name">Nombre:</label>
+                    <input type="text" id="potential-client-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="potential-client-type">Tipo:</label>
+                    <select id="potential-client-type" required>
+                        <option value="agencia">Agencia</option>
+                        <option value="negocio">Negocio</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="potential-client-contact">Contacto:</label>
+                    <input type="text" id="potential-client-contact" required>
+                </div>
+                <div class="form-group">
+                    <label for="potential-client-pipeline">Pipeline:</label>
+                    <select id="potential-client-pipeline" required>
+                        <option value="lead">Lead</option>
+                        <option value="contactado">Contactado</option>
+                        <option value="propuesta">Propuesta</option>
+                        <option value="negociacion">Negociación</option>
+                        <option value="cerrado">Cerrado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="potential-client-notes">Notas:</label>
+                    <textarea id="potential-client-notes" rows="4"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar</button>
+            </form>
+        </div>
+    </div>
+    <div id="country-sales-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Ventas por País</h2>
+            <canvas id="country-sales-chart"></canvas>
+        </div>
+    </div>
+    <div id="country-sales-detail-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Detalle de Ventas por País</h2>
+            <div id="country-sales-detail"></div>
+        </div>
+    </div>
+    <div id="appointment-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Agendar Cita</h2>
+            <form id="appointment-form">
+                <div class="form-group">
+                    <label for="appointment-client">Cliente:</label>
+                    <input type="text" id="appointment-client" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="appointment-email">Correo del cliente:</label>
+                    <input type="email" id="appointment-email" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="appointment-date">Fecha:</label>
+                    <input type="date" id="appointment-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="appointment-message">Mensaje al cliente:</label>
+                    <textarea id="appointment-message" rows="4"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Agendar Cita</button>
+            </form>
+        </div>
+    </div>
+    <div id="email-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Enviar Email</h2>
+            <form id="email-form">
+                <div class="form-group">
+                    <label for="email-subject">Asunto:</label>
+                    <input type="text" id="email-subject" required>
+                </div>
+                <div class="form-group">
+                    <label for="email-to">Para:</label>
+                    <input type="email" id="email-to" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="email-body">Mensaje:</label>
+                    <div id="email-body" contenteditable="true" style="border: 1px solid #ccc; min-height: 200px; padding: 10px;"></div>
+                </div>
+                <div class="form-group">
+                    <label for="email-attachments">Adjuntos:</label>
+                    <input type="file" id="email-attachments" multiple>
+                </div>
+                <button type="submit" class="btn btn-primary">Enviar Email</button>
+            </form>
+        </div>
+    </div>
+    <div id="user-profile-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Perfil de Usuario</h2>
+            <div id="user-profile-info">
+                <!-- La información del perfil del usuario se cargará aquí dinámicamente -->
+            </div>
+        </div>
+    </div>
+    <script>
+        // Datos de ejemplo
+        const vendedores = [
+            { id: 1, nombre: "Ana García", foto: "https://randomuser.me/api/portraits/women/1.jpg", ventas: 150000, numeroVentas: 75, whatsapp: "+34123456789" },
+            { id: 2, nombre: "Carlos Rodríguez", foto: "https://randomuser.me/api/portraits/men/1.jpg", ventas: 120000, numeroVentas: 60, whatsapp: "+34987654321" },
+            { id: 3, nombre: "María López", foto: "https://randomuser.me/api/portraits/women/2.jpg", ventas: 180000, numeroVentas: 90, whatsapp: "+34567891234" },
+            { id: 4, nombre: "Juan Martínez", foto: "https://randomuser.me/api/portraits/men/2.jpg", ventas: 100000, numeroVentas: 50, whatsapp: "+34432198765" },
+            { id: 5, nombre: "Laura Sánchez", foto: "https://randomuser.me/api/portraits/women/3.jpg", ventas: 200000, numeroVentas: 100, whatsapp: "+34678912345" }
+        ];
+
+        const gerentes = [
+            { id: 1, nombre: "Elena Martínez", foto: "https://randomuser.me/api/portraits/women/4.jpg", ventasEquipo: 500000, numeroVendedores: 10, whatsapp: "+34111222333" },
+            { id: 2, nombre: "Roberto Sánchez", foto: "https://randomuser.me/api/portraits/men/5.jpg", ventasEquipo: 450000, numeroVendedores: 8, whatsapp: "+34444555666" },
+            { id: 3, nombre: "Sofía Ruiz", foto: "https://randomuser.me/api/portraits/women/5.jpg", ventasEquipo: 550000, numeroVendedores: 12, whatsapp: "+34777888999" }
+        ];
+
+        const paises = [
+            { id: 1, nombre: "España", ventasTotales: 1000000, ventasMensuales: [80000, 85000, 90000, 88000, 95000, 100000], vendedores: [
+                { nombre: "Ana García", ventas: 150000, numeroVentas: 75 },
+                { nombre: "Carlos Rodríguez", ventas: 120000, numeroVentas: 60 },
+                { nombre: "María López", ventas: 180000, numeroVentas: 90 }
+            ]},
+            { id: 2, nombre: "México", ventasTotales: 800000, ventasMensuales: [70000, 75000, 72000, 80000, 85000, 90000], vendedores: [
+                { nombre: "Juan Martínez", ventas: 100000, numeroVentas: 50 },
+                { nombre: "Laura Sánchez", ventas: 200000, numeroVentas: 100 }
+            ]},
+            { id: 3, nombre: "Argentina", ventasTotales: 600000, ventasMensuales: [50000, 55000, 60000, 58000, 62000, 65000], vendedores: [
+                { nombre: "Diego Fernández", ventas: 90000, numeroVentas: 45 },
+                { nombre: "Lucía Gómez", ventas: 110000, numeroVentas: 55 }
+            ]},
+            { id: 4, nombre: "Colombia", ventasTotales: 450000, ventasMensuales: [35000, 38000, 40000, 42000, 45000, 50000], vendedores: [
+                { nombre: "Andrés Pérez", ventas: 80000, numeroVentas: 40 },
+                { nombre: "Camila Torres", ventas: 70000, numeroVentas: 35 }
+            ]},
+            { id: 5, nombre: "Chile", ventasTotales: 550000, ventasMensuales: [45000, 48000, 50000, 52000, 55000, 60000], vendedores: [
+                { nombre: "Matías Silva", ventas: 95000, numeroVentas: 48 },
+                { nombre: "Valentina Rojas", ventas: 85000, numeroVentas: 43 }
+            ]},
+            { id: 6, nombre: "Perú", ventasTotales: 400000, ventasMensuales: [30000, 33000, 35000, 38000, 40000, 45000], vendedores: [
+                { nombre: "Javier Castro", ventas: 70000, numeroVentas: 35 },
+                { nombre: "Gabriela Vargas", ventas: 60000, numeroVentas: 30 }
+            ]},
+            { id: 7, nombre: "Ecuador", ventasTotales: 350000, ventasMensuales: [25000, 28000, 30000, 32000, 35000, 40000], vendedores: [
+                { nombre: "Ricardo Mendoza", ventas: 55000, numeroVentas: 28 },
+                { nombre: "Daniela Ortiz", ventas: 50000, numeroVentas: 25 }
+            ]},
+            { id: 8, nombre: "Uruguay", ventasTotales: 300000, ventasMensuales: [22000, 24000, 26000, 28000, 30000, 35000], vendedores: [
+                { nombre: "Martín Sosa", ventas: 45000, numeroVentas: 23 },
+                { nombre: "Carolina Núñez", ventas: 40000, numeroVentas: 20 }
+            ]}
+        ];
+
+        const jefesEquipo = [
+            { id: 1, nombre: "Laura Gómez", foto: "https://randomuser.me/api/portraits/women/6.jpg", ventasEquipo: 250000, numeroVendedores: 5, whatsapp: "+34777888999" },
+            { id: 2, nombre: "Pedro Ruiz", foto: "https://randomuser.me/api/portraits/men/7.jpg", ventasEquipo: 200000, numeroVendedores: 4, whatsapp: "+34000111222" },
+            { id: 3, nombre: "Isabel Moreno", foto: "https://randomuser.me/api/portraits/women/7.jpg", ventasEquipo: 280000, numeroVendedores: 6, whatsapp: "+34333444555" }
+        ];
+
+        const suscripciones = [
+            { id: 1, nombre: "Plan Básico", categoria: "Web", precio: 29.99, duracion: 30 },
+            { id: 2, nombre: "Plan Profesional", categoria: "Web", precio: 59.99, duracion: 30 },
+            { id: 3, nombre: "Plan Empresarial", categoria: "Web", precio: 99.99, duracion: 30 },
+            { id: 4, nombre: "Plan E-commerce", categoria: "Tienda Online", precio: 79.99, duracion: 30 },
+            { id: 5, nombre: "Plan Marketing", categoria: "Marketing Digital", precio: 49.99, duracion: 30 }
+        ];
+
+        const clientesPotenciales = [
+            { id: 1, nombre: 'Empresa XYZ', tipo: 'negocio', contacto: 'Juan Pérez', email: 'juan@xyz.com', pipeline: 'lead', notas: 'Interesado en Plan Profesional' },
+            { id: 2, nombre: 'Agencia ABC', tipo: 'agencia', contacto: 'María Gómez', email: 'maria@abc.com', pipeline: 'contactado', notas: 'Solicita demo del producto' },
+            { id: 3, nombre: 'Startup 123', tipo: 'negocio', contacto: 'Carlos López', email: 'carlos@123.com', pipeline: 'propuesta', notas: 'Negociando términos del contrato' }
+        ];
+
+        // Funciones de utilidad
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount);
+        }
+
+        function formatDate(dateString) {
+            const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            return new Date(dateString).toLocaleDateString('es-ES', options);
+        }
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeDashboard();
+            setupEventListeners();
+        });
+
+        function initializeDashboard() {
+            updateVentasStats();
+            renderVendedores();
+            renderGerentes();
+            renderPaises();
+            renderJefesEquipo();
+            renderSuscripciones();
+            renderClientesPotenciales();
+            initializeCharts();
+        }
+
+        function updateVentasStats() {
+            const totalSales = vendedores.reduce((sum, vendedor) => sum + vendedor.ventas, 0);
+            const totalSalesCount = vendedores.reduce((sum, vendedor) => sum + vendedor.numeroVentas, 0);
+
+            document.getElementById('total-sales').textContent = formatCurrency(totalSales);
+            document.getElementById('total-sales-count').textContent = totalSalesCount;
+            document.getElementById('active-sellers').textContent = vendedores.length;
+            document.getElementById('conversion-rate').textContent = '3.5%';
+        }
+
+        function renderVendedores() {
+            const vendedoresGrid = document.getElementById('sellers-grid');
+            vendedoresGrid.innerHTML = vendedores.map(vendedor => `
+                <div class="seller-card fade-in">
+                    <img src="${vendedor.foto}" alt="${vendedor.nombre}" class="seller-avatar">
+                    <h3 class="seller-name">${vendedor.nombre}</h3>
+                    <div class="seller-stats">
+                        <div class="seller-stat">
+                            <div class="seller-stat-value">${formatCurrency(vendedor.ventas)}</div>
+                            <div class="seller-stat-label">Ventas Totales</div>
+                        </div>
+                        <div class="seller-stat">
+                            <div class="seller-stat-value">${vendedor.numeroVentas}</div>
+                            <div class="seller-stat-label">Número de Ventas</div>
+                        </div>
+                    </div>
+                    <a href="https://wa.me/${vendedor.whatsapp}" target="_blank" class="btn btn-whatsapp">
+                        <i class="fab fa-whatsapp"></i> Contactar
+                    </a>
+                    <button class="btn btn-secondary btn-view-profile" data-id="${vendedor.id}">Ver Perfil</button>
+                    <button class="btn btn-danger btn-delete-seller" data-id="${vendedor.id}">Eliminar</button>
+                </div>
+            `).join('');
+        }
+
+        function renderGerentes() {
+            const gerentesGrid = document.getElementById('gerentes-grid');
+            gerentesGrid.innerHTML = gerentes.map(gerente => `
+                <div class="gerente-card fade-in">
+                    <img src="${gerente.foto}" alt="${gerente.nombre}" class="gerente-avatar">
+                    <h3 class="gerente-name">${gerente.nombre}</h3>
+                    <div class="gerente-stats">
+                        <div class="gerente-stat">
+                            <div class="gerente-stat-value">${formatCurrency(gerente.ventasEquipo)}</div>
+                            <div class="gerente-stat-label">Ventas del Equipo</div>
+                        </div>
+                        <div class="gerente-stat">
+                            <div class="gerente-stat-value">${gerente.numeroVendedores}</div>
+                            <div class="gerente-stat-label">Vendedores a Cargo</div>
+                        </div>
+                    </div>
+                    <a href="https://wa.me/${gerente.whatsapp}" target="_blank" class="btn btn-whatsapp">
+                        <i class="fab fa-whatsapp"></i> Contactar
+                    </a>
+                    <button class="btn btn-secondary btn-view-profile" data-id="${gerente.id}">Ver Perfil</button>
+                    <button class="btn btn-danger btn-delete-gerente" data-id="${gerente.id}">Eliminar</button>
+                </div>
+            `).join('');
+        }
+
+        function renderPaises() {
+            const paisesGrid = document.getElementById('paises-grid');
+            paisesGrid.innerHTML = paises.map(pais => `
+                <div class="pais-card fade-in">
+                    <h3 class="pais-name">${pais.nombre}</h3>
+                    <div class="pais-stats">
+                        <div class="pais-stat">
+                            <div class="pais-stat-value">${formatCurrency(pais.ventasTotales)}</div>
+                            <div class="pais-stat-label">Ventas Totales</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-view-sales" data-id="${pais.id}">Ventas</button>
+                    <button class="btn btn-secondary btn-view-sales-detail" data-id="${pais.id}">Detalle</button>
+                </div>
+            `).join('');
+        }
+
+        function renderJefesEquipo() {
+            const jefesEquipoGrid = document.getElementById('jefes-equipo-grid');
+            jefesEquipoGrid.innerHTML = jefesEquipo.map(jefe => `
+                <div class="jefe-equipo-card fade-in">
+                    <img src="${jefe.foto}" alt="${jefe.nombre}" class="jefe-equipo-avatar">
+                    <h3 class="jefe-equipo-name">${jefe.nombre}</h3>
+                    <div class="jefe-equipo-stats">
+                        <div class="jefe-equipo-stat">
+                            <div class="jefe-equipo-stat-value">${formatCurrency(jefe.ventasEquipo)}</div>
+                            <div class="jefe-equipo-stat-label">Ventas del Equipo</div>
+                        </div>
+                        <div class="jefe-equipo-stat">
+                            <div class="jefe-equipo-stat-value">${jefe.numeroVendedores}</div>
+                            <div class="jefe-equipo-stat-label">Vendedores a Cargo</div>
+                        </div>
+                    </div>
+                    <a href="https://wa.me/${jefe.whatsapp}" target="_blank" class="btn btn-whatsapp">
+                        <i class="fab fa-whatsapp"></i> Contactar
+                    </a>
+                    <button class="btn btn-secondary btn-view-profile" data-id="${jefe.id}">Ver Perfil</button>
+                    <button class="btn btn-danger btn-delete-jefe-equipo" data-id="${jefe.id}">Eliminar</button>
+                </div>
+            `).join('');
+        }
+
+        function renderSuscripciones() {
+            const subscriptionsGrid = document.getElementById('subscriptions-grid');
+            subscriptionsGrid.innerHTML = suscripciones.map(suscripcion => `
+                <div class="subscription-card fade-in">
+                    <h3 class="subscription-name">${suscripcion.nombre}</h3>
+                    <div class="subscription-stats">
+                        <div class="subscription-stat">
+                            <div class="subscription-stat-value">${formatCurrency(suscripcion.precio)}</div>
+                            <div class="subscription-stat-label">Precio Mensual</div>
+                        </div>
+                        <div class="subscription-stat">
+                            <div class="subscription-stat-value">${suscripcion.duracion} días</div>
+                            <div class="subscription-stat-label">Duración</div>
+                        </div>
+                    </div>
+                    <p>Categoría: ${suscripcion.categoria}</p>
+                    <button class="btn btn-secondary btn-edit-subscription" data-id="${suscripcion.id}">Editar</button>
+                    <button class="btn btn-danger btn-delete-subscription" data-id="${suscripcion.id}">Eliminar</button>
+                </div>
+            `).join('');
+        }
+
+        function renderClientesPotenciales() {
+            const clientesGrid = document.getElementById('potential-clients-grid');
+            clientesGrid.innerHTML = clientesPotenciales.map(cliente => `
+                <div class="cliente-card fade-in">
+                    <div class="cliente-card-header">
+                        <h3>${cliente.nombre}</h3>
+                        <div class="cliente-card-actions">
+                            <button class="btn btn-secondary btn-edit-cliente" data-id="${cliente.id}">Editar</button>
+                            <button class="btn btn-danger btn-delete-cliente" data-id="${cliente.id}">Eliminar</button>
+                        </div>
+                    </div>
+                    <p><strong>Tipo:</strong> ${cliente.tipo}</p>
+                    <p><strong>Contacto:</strong> ${cliente.contacto}</p>
+                    <p><strong>Email:</strong> ${cliente.email}</p>
+                    <p><strong>Pipeline:</strong> ${cliente.pipeline}</p>
+                    <p><strong>Notas:</strong> ${cliente.notas}</p>
+                    <div class="cliente-card-buttons">
+                        <button class="btn btn-primary btn-schedule-appointment" data-id="${cliente.id}">Agendar Cita</button>
+                        <button class="btn btn-secondary btn-send-email" data-id="${cliente.id}">Enviar Email</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function initializeCharts() {
+            const salesChartCtx = document.getElementById('sales-chart').getContext('2d');
+            new Chart(salesChartCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio'],
+                    datasets: [{
+                        label: 'Ventas Mensuales',
+                        data: [65000, 70000, 80000, 75000, 85000, 90000],
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Ventas Mensuales'
+                        }
+                    }
+                }
+            });
+
+            const sellersChartCtx = document.getElementById('sellers-chart').getContext('2d');
+            new Chart(sellersChartCtx, {
+                type: 'pie',
+                data: {
+                    labels: vendedores.map(v => v.nombre),
+                    datasets: [{
+                        data: vendedores.map(v => v.ventas),
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Distribución de Ventas por Vendedor'
+                        }
+                    }
+                }
+            });
+
+            const subscriptionsChartCtx = document.getElementById('subscriptions-chart').getContext('2d');
+            new Chart(subscriptionsChartCtx, {
+                type: 'bar',
+                data: {
+                    labels: suscripciones.map(s => s.nombre),
+                    datasets: [{
+                        label: 'Suscripciones Vendidas',
+                        data: [120, 190, 80, 150, 100],
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Suscripciones Más Vendidas'
+                        }
+                    }
+                }
+            });
+
+            const regionsChartCtx = document.getElementById('regions-chart').getContext('2d');
+            new Chart(regionsChartCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: paises.map(p => p.nombre),
+                    datasets: [{
+                        data: paises.map(p => p.ventasTotales),
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)',
+                            'rgba(255, 159, 64, 0.8)',
+                            'rgba(199, 199, 199, 0.8)',
+                            'rgba(83, 102, 255, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Rendimiento por Región'
+                        }
+                    }
+                }
+            });
+        }
+
+        function setupEventListeners() {
+            // Navegación del sidebar
+            document.querySelectorAll('.sidebar-nav a').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const sectionId = e.target.getAttribute('data-section');
+                    showSection(sectionId);
+                });
+            });
+
+            // Toggle del sidebar
+            document.getElementById('toggle-sidebar').addEventListener('click', toggleSidebar);
+
+            // Toggle del tema
+            document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+            // Botón de notificaciones
+            document.getElementById('notifications-btn').addEventListener('click', showNotifications);
+
+            // Botones de acción para vendedores
+            document.getElementById('sellers-grid').addEventListener('click', handleSellerActions);
+
+            // Botones de acción para gerentes
+            document.getElementById('gerentes-grid').addEventListener('click', handleGerenteActions);
+
+            // Botones de acción para países
+            document.getElementById('paises-grid').addEventListener('click', handlePaisActions);
+
+            // Botones de acción para jefes de equipo
+            document.getElementById('jefes-equipo-grid').addEventListener('click', handleJefeEquipoActions);
+
+            // Botones de acción para suscripciones
+            document.getElementById('subscriptions-grid').addEventListener('click', handleSubscriptionActions);
+
+            // Botones de acción para clientes potenciales
+            document.getElementById('potential-clients-grid').addEventListener('click', handleClientePotencialActions);
+
+            // Botón para generar reporte
+            document.getElementById('generate-report').addEventListener('click', generateReport);
+
+            // Botón para descargar reporte
+            document.getElementById('download-report').addEventListener('click', downloadReport);
+
+            // Botón para guardar configuración
+            document.getElementById('save-config').addEventListener('click', saveConfiguration);
+
+            // Botones para cerrar modales
+            document.querySelectorAll('.modal .close').forEach(closeBtn => {
+                closeBtn.addEventListener('click', () => {
+                    closeBtn.closest('.modal').style.display = 'none';
+                });
+            });
+
+            // Evento para mostrar/ocultar fechas personalizadas en reportes
+            document.getElementById('report-period').addEventListener('change', (e) => {
+                const customDateRange = document.getElementById('custom-date-range');
+                customDateRange.style.display = e.target.value === 'custom' ? 'block' : 'none';
+            });
+
+            // Enlace del perfil de usuario
+            document.getElementById('profile-link').addEventListener('click', (e) => {
+                e.preventDefault();
+                showUserProfile();
+            });
+        }
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(sectionId).classList.add('active');
+            document.getElementById('section-title').textContent = document.querySelector(`[data-section="${sectionId}"]`).textContent.trim();
+            document.querySelectorAll('.sidebar-nav a').forEach(link => {
+                link.classList.remove('active');
+            });
+            document.querySelector(`[data-section="${sectionId}"]`).classList.add('active');
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            const themeIcon = document.querySelector('#theme-toggle i');
+            themeIcon.classList.toggle('fa-sun');
+            themeIcon.classList.toggle('fa-moon');
+        }
+
+        function showNotifications() {
+            const modal = document.getElementById('notification-modal');
+            const notificationList = document.getElementById('notification-list');
+            notificationList.innerHTML = `
+                <li>Nueva venta realizada por Ana García</li>
+                <li>Recordatorio: Reunión de equipo mañana a las 10:00</li>
+                <li>Actualización del sistema disponible</li>
+            `;
+            modal.style.display = 'block';
+        }
+
+        function handleSellerActions(e) {
+            if (e.target.classList.contains('btn-view-profile')) {
+                const sellerId = e.target.getAttribute('data-id');
+                showSellerProfile(sellerId);
+            } else if (e.target.classList.contains('btn-delete-seller')) {
+                const sellerId = e.target.getAttribute('data-id');
+                deleteSeller(sellerId);
+            }
+        }
+
+        function handleGerenteActions(e) {
+            if (e.target.classList.contains('btn-view-profile')) {
+                const gerenteId = e.target.getAttribute('data-id');
+                showGerenteProfile(gerenteId);
+            } else if (e.target.classList.contains('btn-delete-gerente')) {
+                const gerenteId = e.target.getAttribute('data-id');
+                deleteGerente(gerenteId);
+            }
+        }
+
+        function handlePaisActions(e) {
+            if (e.target.classList.contains('btn-view-sales')) {
+                const paisId = e.target.getAttribute('data-id');
+                showCountrySales(paisId);
+            } else if (e.target.classList.contains('btn-view-sales-detail')) {
+                const paisId = e.target.getAttribute('data-id');
+                showCountrySalesDetail(paisId);
+            }
+        }
+
+        function handleJefeEquipoActions(e) {
+            if (e.target.classList.contains('btn-view-profile')) {
+                const jefeId = e.target.getAttribute('data-id');
+                showJefeEquipoProfile(jefeId);
+            } else if (e.target.classList.contains('btn-delete-jefe-equipo')) {
+                const jefeId = e.target.getAttribute('data-id');
+                deleteJefeEquipo(jefeId);
+            }
+        }
+
+        function handleSubscriptionActions(e) {
+            if (e.target.classList.contains('btn-edit-subscription')) {
+                const subscriptionId = e.target.getAttribute('data-id');
+                editSubscription(subscriptionId);
+            } else if (e.target.classList.contains('btn-delete-subscription')) {
+                const subscriptionId = e.target.getAttribute('data-id');
+                deleteSubscription(subscriptionId);
+            }
+        }
+
+        function handleClientePotencialActions(e) {
+            if (e.target.classList.contains('btn-edit-cliente')) {
+                const clienteId = e.target.getAttribute('data-id');
+                editClientePotencial(clienteId);
+            } else if (e.target.classList.contains('btn-delete-cliente')) {
+                const clienteId = e.target.getAttribute('data-id');
+                deleteClientePotencial(clienteId);
+            } else if (e.target.classList.contains('btn-schedule-appointment')) {
+                const clienteId = e.target.getAttribute('data-id');
+                scheduleAppointment(clienteId);
+            } else if (e.target.classList.contains('btn-send-email')) {
+                const clienteId = e.target.getAttribute('data-id');
+                sendEmail(clienteId);
+            }
+        }
+
+        function showSellerProfile(sellerId) {
+            const seller = vendedores.find(v => v.id == sellerId);
+            if (seller) {
+                const modal = document.getElementById('user-profile-modal');
+                const profileInfo = document.getElementById('user-profile-info');
+                profileInfo.innerHTML = `
+                    <img src="${seller.foto}" alt="${seller.nombre}" class="user-avatar" style="width: 100px; height: 100px; border-radius: 50%; margin-bottom: 15px;">
+                    <h3>${seller.nombre}</h3>
+                    <p><strong>Ventas Totales:</strong> ${formatCurrency(seller.ventas)}</p>
+                    <p><strong>Número de Ventas:</strong> ${seller.numeroVentas}</p>
+                    <p><strong>WhatsApp:</strong> ${seller.whatsapp}</p>
+                    <h4>Rendimiento</h4>
+                    <canvas id="seller-performance-chart"></canvas>
+                `;
+                modal.style.display = 'block';
+
+                // Crear gráfico de rendimiento del vendedor
+                const ctx = document.getElementById('seller-performance-chart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+                        datasets: [{
+                            label: 'Ventas Mensuales',
+                            data: [12000, 19000, 15000, 20000, 18000, 22000],
+                            borderColor: 'rgb(75, 192, 192)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Rendimiento de Ventas'
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function deleteSeller(sellerId) {
+            if (confirm('¿Estás seguro de que quieres eliminar este vendedor?')) {
+                const index = vendedores.findIndex(v => v.id == sellerId);
+                if (index !== -1) {
+                    vendedores.splice(index, 1);
+                    renderVendedores();
+                    updateVentasStats();
+                    alert('Vendedor eliminado con éxito');
+                }
+            }
+        }
+
+        function showGerenteProfile(gerenteId) {
+            const gerente = gerentes.find(g => g.id == gerenteId);
+            if (gerente) {
+                const modal = document.getElementById('user-profile-modal');
+                const profileInfo = document.getElementById('user-profile-info');
+                profileInfo.innerHTML = `
+                    <img src="${gerente.foto}" alt="${gerente.nombre}" class="user-avatar" style="width: 100px; height: 100px; border-radius: 50%; margin-bottom: 15px;">
+                    <h3>${gerente.nombre}</h3>
+                    <p><strong>Ventas del Equipo:</strong> ${formatCurrency(gerente.ventasEquipo)}</p>
+                    <p><strong>Vendedores a Cargo:</strong> ${gerente.numeroVendedores}</p>
+                    <p><strong>WhatsApp:</strong> ${gerente.whatsapp}</p>
+                    <h4>Rendimiento del Equipo</h4>
+                    <canvas id="gerente-team-performance-chart"></canvas>
+                `;
+                modal.style.display = 'block';
+
+                // Crear gráfico de rendimiento del equipo del gerente
+                const ctx = document.getElementById('gerente-team-performance-chart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+                        datasets: [{
+                            label: 'Ventas del Equipo',
+                            data: [50000, 60000, 55000, 70000, 65000, 75000],
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Rendimiento del Equipo'
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function deleteGerente(gerenteId) {
+            if (confirm('¿Estás seguro de que quieres eliminar este gerente?')) {
+                const index = gerentes.findIndex(g => g.id == gerenteId);
+                if (index !== -1) {
+                    gerentes.splice(index, 1);
+                    renderGerentes();
+                    alert('Gerente eliminado con éxito');
+                }
+            }
+        }
+
+        function showCountrySales(paisId) {
+            const pais = paises.find(p => p.id == paisId);
+            if (pais) {
+                const modal = document.getElementById('country-sales-modal');
+                const chartCanvas = document.getElementById('country-sales-chart');
+                const ctx = chartCanvas.getContext('2d');
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio'],
+                        datasets: [{
+                            label: 'Ventas Mensuales',
+                            data: pais.ventasMensuales,
+                            borderColor: 'rgb(75, 192, 192)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            title: {
+                                display: true,
+                                text: `Ventas Mensuales en ${pais.nombre}`
+                            }
+                        }
+                    }
+                });
+
+                modal.style.display = 'block';
+            }
+        }
+
+        function showCountrySalesDetail(paisId) {
+            const pais = paises.find(p => p.id == paisId);
+            if (pais) {
+                const modal = document.getElementById('country-sales-detail-modal');
+                const detailContainer = document.getElementById('country-sales-detail');
+
+                detailContainer.innerHTML = `
+                    <h3>Detalles de Ventas en ${pais.nombre}</h3>
+                    <p>Ventas Totales: ${formatCurrency(pais.ventasTotales)}</p>
+                    <h4>Top Vendedores:</h4>
+                    <ul>
+                        ${pais.vendedores.map(v => `
+                            <li>${v.nombre} - Ventas: ${formatCurrency(v.ventas)} (${v.numeroVentas} ventas)</li>
+                        `).join('')}
+                    </ul>
+                `;
+
+                modal.style.display = 'block';
+            }
+        }
+
+        function showJefeEquipoProfile(jefeId) {
+            const jefe = jefesEquipo.find(j => j.id == jefeId);
+            if (jefe) {
+                const modal = document.getElementById('user-profile-modal');
+                const profileInfo = document.getElementById('user-profile-info');
+                profileInfo.innerHTML = `
+                    <img src="${jefe.foto}" alt="${jefe.nombre}" class="user-avatar" style="width: 100px; height: 100px; border-radius: 50%; margin-bottom: 15px;">
+                    <h3>${jefe.nombre}</h3>
+                    <p><strong>Ventas del Equipo:</strong> ${formatCurrency(jefe.ventasEquipo)}</p>
+                    <p><strong>Vendedores a Cargo:</strong> ${jefe.numeroVendedores}</p>
+                    <p><strong>WhatsApp:</strong> ${jefe.whatsapp}</p>
+                    <h4>Rendimiento del Equipo</h4>
+                    <canvas id="jefe-team-performance-chart"></canvas>
+                `;
+                modal.style.display = 'block';
+
+                // Crear gráfico de rendimiento del equipo del jefe
+                const ctx = document.getElementById('jefe-team-performance-chart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+                        datasets: [{
+                            label: 'Ventas del Equipo',
+                            data: [30000, 35000, 32000, 40000, 38000, 42000],
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Rendimiento del Equipo'
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function deleteJefeEquipo(jefeId) {
+            if (confirm('¿Estás seguro de que quieres eliminar este jefe de equipo?')) {
+                const index = jefesEquipo.findIndex(j => j.id == jefeId);
+                if (index !== -1) {
+                    jefesEquipo.splice(index, 1);
+                    renderJefesEquipo();
+                    alert('Jefe de equipo eliminado con éxito');
+                }
+            }
+        }
+
+        function editSubscription(subscriptionId) {
+            const subscription = suscripciones.find(s => s.id == subscriptionId);
+            if (subscription) {
+                const modal = document.getElementById('subscription-modal');
+                document.getElementById('subscription-modal-title').textContent = 'Editar Suscripción';
+                document.getElementById('subscription-name').value = subscription.nombre;
+                document.getElementById('subscription-category').value = subscription.categoria;
+                document.getElementById('subscription-price').value = subscription.precio;
+                document.getElementById('subscription-duration').value = subscription.duracion;
+                modal.style.display = 'block';
+
+                // Manejar el envío del formulario
+                document.getElementById('subscription-form').onsubmit = function(e) {
+                    e.preventDefault();
+                    subscription.nombre = document.getElementById('subscription-name').value;
+                    subscription.categoria = document.getElementById('subscription-category').value;
+                    subscription.precio = parseFloat(document.getElementById('subscription-price').value);
+                    subscription.duracion = parseInt(document.getElementById('subscription-duration').value);
+                    renderSuscripciones();
+                    modal.style.display = 'none';
+                };
+            }
+        }
+
+        function deleteSubscription(subscriptionId) {
+            if (confirm('¿Estás seguro de que quieres eliminar esta suscripción?')) {
+                const index = suscripciones.findIndex(s => s.id == subscriptionId);
+                if (index !== -1) {
+                    suscripciones.splice(index, 1);
+                    renderSuscripciones();
+                    alert('Suscripción eliminada con éxito');
+                }
+            }
+        }
+
+        function editClientePotencial(clienteId) {
+            const cliente = clientesPotenciales.find(c => c.id == clienteId);
+            if (cliente) {
+                const modal = document.getElementById('potential-client-modal');
+                document.getElementById('potential-client-modal-title').textContent = 'Editar Cliente Potencial';
+                document.getElementById('potential-client-name').value = cliente.nombre;
+                document.getElementById('potential-client-type').value = cliente.tipo;
+                document.getElementById('potential-client-contact').value = cliente.contacto;
+                document.getElementById('potential-client-pipeline').value = cliente.pipeline;
+                document.getElementById('potential-client-notes').value = cliente.notas;
+                modal.style.display = 'block';
+
+                // Manejar el envío del formulario
+                document.getElementById('potential-client-form').onsubmit = function(e) {
+                    e.preventDefault();
+                    cliente.nombre = document.getElementById('potential-client-name').value;
+                    cliente.tipo = document.getElementById('potential-client-type').value;
+                    cliente.contacto = document.getElementById('potential-client-contact').value;
+                    cliente.pipeline = document.getElementById('potential-client-pipeline').value;
+                    cliente.notas = document.getElementById('potential-client-notes').value;
+                    renderClientesPotenciales();
+                    modal.style.display = 'none';
+                };
+            }
+        }
+
+        function deleteClientePotencial(clienteId) {
+            if (confirm('¿Estás seguro de que quieres eliminar este cliente potencial?')) {
+                const index = clientesPotenciales.findIndex(c => c.id == clienteId);
+                if (index !== -1) {
+                    clientesPotenciales.splice(index, 1);
+                    renderClientesPotenciales();
+                    alert('Cliente potencial eliminado con éxito');
+                }
+            }
+        }
+
+        function scheduleAppointment(clienteId) {
+            const client = clientesPotenciales.find(c => c.id == clienteId);
+            if (client) {
+                const modal = document.getElementById('appointment-modal');
+                document.getElementById('appointment-client').value = client.nombre;
+                document.getElementById('appointment-email').value = client.email;
+                modal.style.display = 'block';
+
+                // Manejar el envío del formulario
+                document.getElementById('appointment-form').onsubmit = function(e) {
+                    e.preventDefault();
+                    const date = document.getElementById('appointment-date').value;
+                    const message = document.getElementById('appointment-message').value;
+                    console.log(`Cita agendada para ${client.nombre} el ${date}. Mensaje: ${message}`);
+                    modal.style.display = 'none';
+                    alert('Cita agendada con éxito');
+                };
+            }
+        }
+
+        function sendEmail(clienteId) {
+            const client = clientesPotenciales.find(c => c.id == clienteId);
+            if (client) {
+                const modal = document.getElementById('email-modal');
+                document.getElementById('email-to').value = client.email;
+                modal.style.display = 'block';
+
+                // Manejar el envío del formulario
+                document.getElementById('email-form').onsubmit = function(e) {
+                    e.preventDefault();
+                    const subject = document.getElementById('email-subject').value;
+                    const body = document.getElementById('email-body').innerHTML;
+                    console.log(`Email enviado a ${client.nombre}. Asunto: ${subject}. Contenido: ${body}`);
+                    modal.style.display = 'none';
+                    alert('Email enviado con éxito');
+                };
+            }
+        }
+
+        function generateReport() {
+            const reportType = document.getElementById('report-type').value;
+            const reportPeriod = document.getElementById('report-period').value;
+            let startDate, endDate;
+
+            if (reportPeriod === 'custom') {
+                startDate = document.getElementById('start-date').value;
+                endDate = document.getElementById('end-date').value;
+            } else {
+                const today = new Date();
+                endDate = today.toISOString().split('T')[0];
+                startDate = new Date(today.setDate(today.getDate() - parseInt(reportPeriod))).toISOString().split('T')[0];
+            }
+
+            const reportPreview = document.getElementById('report-preview');
+            reportPreview.innerHTML = `
+                <h3>Reporte Generado</h3>
+                <p>Tipo de reporte: ${reportType}</p>
+                <p>Período: ${startDate} a ${endDate}</p>
+                <div id="report-charts"></div>
+            `;
+
+            const reportCharts = document.getElementById('report-charts');
+
+            // Gráfico de ventas por día
+            const dailySalesChart = document.createElement('canvas');
+            dailySalesChart.id = 'daily-sales-chart';
+            reportCharts.appendChild(dailySalesChart);
+            new Chart(dailySalesChart, {
+                type: 'line',
+                data: {
+                    labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                    datasets: [{
+                        label: 'Ventas Diarias',
+                        data: [12000, 19000, 15000, 17000, 22000, 18000, 20000],
+                        borderColor: 'rgb(255, 99, 132)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Ventas Diarias'
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de rendimiento de vendedores
+            const sellerPerformanceChart = document.createElement('canvas');
+            sellerPerformanceChart.id = 'seller-performance-chart';
+            reportCharts.appendChild(sellerPerformanceChart);
+            new Chart(sellerPerformanceChart, {
+                type: 'bar',
+                data: {
+                    labels: vendedores.map(v => v.nombre),
+                    datasets: [{
+                        label: 'Ventas Totales',
+                        data: vendedores.map(v => v.ventas),
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Rendimiento de Vendedores'
+                        }
+                    }
+                }
+            });
+
+            // Tabla de resumen financiero
+            const financialSummary = document.createElement('div');
+            financialSummary.innerHTML = `
+                <h4>Resumen Financiero</h4>
+                <table class="financial-summary">
+                    <tr>
+                        <th>Concepto</th>
+                        <th>Monto</th>
+                    </tr>
+                    <tr>
+                        <td>Ingresos Totales</td>
+                        <td>${formatCurrency(750000)}</td>
+                    </tr>
+                    <tr>
+                        <td>Costos Operativos</td>
+                        <td>${formatCurrency(300000)}</td>
+                    </tr>
+                    <tr>
+                        <td>Beneficio Neto</td>
+                        <td>${formatCurrency(450000)}</td>
+                    </tr>
+                </table>
+            `;
+            reportCharts.appendChild(financialSummary);
+
+            document.getElementById('download-report').style.display = 'block';
+        }
+
+        function downloadReport() {
+            const reportContent = document.getElementById('report-preview');
+            
+            html2canvas(reportContent).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jspdf.jsPDF();
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save('reporte.pdf');
+            });
+        }
+
+        function saveConfiguration() {
+            const config = {
+                companyName: document.getElementById('company-name').value,
+                timezone: document.getElementById('timezone').value,
+                currency: document.getElementById('currency').value,
+                emailNotifications: document.getElementById('email-notifications').checked,
+                pushNotifications: document.getElementById('push-notifications').checked,
+                notificationFrequency: document.getElementById('notification-frequency').value,
+                twoFactorAuth: document.getElementById('two-factor-auth').checked,
+                sessionTimeout: document.getElementById('session-timeout').value
+            };
+
+            console.log('Configuración guardada:', config);
+            alert('Configuración guardada con éxito');
+        }
+
+        function showUserProfile() {
+            const modal = document.getElementById('user-profile-modal');
+            const profileInfo = document.getElementById('user-profile-info');
+            profileInfo.innerHTML = `
+                <img src="https://randomuser.me/api/portraits/men/1.jpg" alt="John Doe" class="user-avatar" style="width: 100px; height: 100px; border-radius: 50%; margin-bottom: 15px;">
+                <h3>John Doe</h3>
+                <p><strong>Rol:</strong> Administrador</p>
+                <p><strong>Email:</strong> john.doe@example.com</p>
+                <p><strong>Teléfono:</strong> +34 123 456 789</p>
+                <h4>Estadísticas Generales</h4>
+                <p><strong>Usuarios Activos:</strong> 150</p>
+                <p><strong>Ventas Totales:</strong> ${formatCurrency(1500000)}</p>
+                <p><strong>Suscripciones Activas:</strong> 500</p>
+                <h4>Actividad Reciente</h4>
+                <ul>
+                    <li>Generó un reporte de ventas - ${formatDate(new Date())}</li>
+                    <li>Actualizó la configuración del sistema - ${formatDate(new Date(Date.now() - 86400000))}</li>
+                    <li>Añadió un nuevo vendedor - ${formatDate(new Date(Date.now() - 172800000))}</li>
+                </ul>
+            `;
+            modal.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
